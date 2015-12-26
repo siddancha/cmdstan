@@ -79,6 +79,7 @@
 #include <stan/services/arguments/singleton_argument.hpp>
 #include <stan/services/arguments/unvalued_argument.hpp>
 #include <stan/services/arguments/valued_argument.hpp>
+#include <stan/services/diagnose/diagnose.hpp>
 #include <stan/services/sample/mcmc_writer.hpp>
 #include <stan/mcmc/fixed_param_sampler.hpp>
 #include <stan/mcmc/hmc/static/adapt_unit_e_static_hmc.hpp>
@@ -272,46 +273,20 @@ namespace stan {
       //////////////////////////////////////////////////
 
       if (parser.arg("method")->arg("diagnose")) {
-        std::vector<double> cont_vector(cont_params.size());
-        for (int i = 0; i < cont_params.size(); ++i)
-          cont_vector.at(i) = cont_params(i);
-        std::vector<int> disc_vector;
-
         stan::services::list_argument* test = dynamic_cast<stan::services::list_argument*>
                               (parser.arg("method")->arg("diagnose")->arg("test"));
 
         if (test->value() == "gradient") {
-          std::cout << std::endl << "TEST GRADIENT MODE" << std::endl;
-
           double epsilon = dynamic_cast<stan::services::real_argument*>
                            (test->arg("gradient")->arg("epsilon"))->value();
 
           double error = dynamic_cast<stan::services::real_argument*>
                          (test->arg("gradient")->arg("error"))->value();
-
-          int num_failed
-            = stan::model::test_gradients<true, true>
-            (model, cont_vector, disc_vector,
-             epsilon, error, info);
-
-          if (output_stream) {
-            num_failed
-              = stan::model::test_gradients<true, true>
-              (model, cont_vector, disc_vector,
-               epsilon, error, sample_writer);
-          }
-
-          if (diagnostic_stream) {
-            num_failed
-              = stan::model::test_gradients<true, true>
-              (model, cont_vector, disc_vector,
-               epsilon, error, diagnostic_writer);
-          }
-
-          (void) num_failed; // FIXME: do something with the number failed
-
-          return stan::services::error_codes::OK;
-
+          
+          return stan::services::diagnose::diagnose(cont_params, model,
+                                                    epsilon, error,
+                                                    info, sample_writer);
+          
         }
       }
 
