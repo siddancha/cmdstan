@@ -136,15 +136,14 @@ namespace stan {
     int command(int argc, const char* argv[]) {
       stan::interface_callbacks::writer::stream_writer info(std::cout);
       stan::interface_callbacks::writer::stream_writer err(std::cout);
-      
-      std::vector<stan::services::argument*> valid_arguments;
-      valid_arguments.push_back(new stan::services::arg_id());
-      valid_arguments.push_back(new stan::services::arg_data());
-      valid_arguments.push_back(new stan::services::arg_init());
-      valid_arguments.push_back(new stan::services::arg_random());
-      valid_arguments.push_back(new stan::services::arg_output());
 
-      stan::services::argument_parser parser(valid_arguments);
+      stan::services::argument_parser parser;
+      parser.push_valid_arg(new stan::services::arg_id());
+      parser.push_valid_arg(new stan::services::arg_data());
+      parser.push_valid_arg(new stan::services::arg_init());
+      parser.push_valid_arg(new stan::services::arg_random());
+      parser.push_valid_arg(new stan::services::arg_output());
+
       int err_code = parser.parse_args(argc, argv, info, err);
       if (err_code != 0) {
         std::cout << "Failed to parse arguments, terminating Stan" << std::endl;
@@ -856,9 +855,6 @@ namespace stan {
         diagnostic_stream->close();
         delete diagnostic_stream;
       }
-
-      for (size_t i = 0; i < valid_arguments.size(); ++i)
-        delete valid_arguments.at(i);
 
       return 0;
     }
