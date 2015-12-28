@@ -678,8 +678,6 @@ namespace stan {
         writer.write_sample_names(s, sampler_ptr, model);
         writer.write_diagnostic_names(s, sampler_ptr, model);
 
-        std::string prefix = "";
-        std::string suffix = "\n";
         interface_callbacks::interrupt::noop startTransitionCallback;
 
         // Warm-Up
@@ -690,7 +688,6 @@ namespace stan {
                                    refresh, save_warmup,
                                    writer,
                                    s, model, base_rng,
-                                   prefix, suffix, std::cout,
                                    startTransitionCallback,
                                    info);
 
@@ -711,7 +708,6 @@ namespace stan {
            refresh, true,
            writer,
            s, model, base_rng,
-           prefix, suffix, std::cout,
            startTransitionCallback,
            info);
 
