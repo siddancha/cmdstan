@@ -105,6 +105,7 @@
 #include <stan/services/mcmc/sample.hpp>
 #include <stan/services/mcmc/warmup.hpp>
 #include <stan/services/optimize/do_bfgs_optimize.hpp>
+#include <stan/services/optimize/newton.hpp>
 #include <stan/services/sample/init_adapt.hpp>
 #include <stan/services/sample/init_nuts.hpp>
 #include <stan/services/sample/init_static_hmc.hpp>
@@ -166,7 +167,7 @@ namespace stan {
                                std::fstream::in);
       stan::io::dump data_var_context(data_stream);
       data_stream.close();
-      
+
       // Sample output
       std::string output_file = dynamic_cast<stan::services::string_argument*>(
                                 parser.arg("output")->arg("file"))->value();
@@ -178,7 +179,7 @@ namespace stan {
         output_stream = new null_fstream();
       }
 
-      
+
       // Diagnostic output
       std::string diagnostic_file
         = dynamic_cast<stan::services::string_argument*>
@@ -195,7 +196,7 @@ namespace stan {
       // Refresh rate
       int refresh = dynamic_cast<stan::services::int_argument*>(
                     parser.arg("output")->arg("refresh"))->value();
-      
+
       // Identification
       unsigned int id = dynamic_cast<stan::services::int_argument*>
         (parser.arg("id"))->value();
@@ -245,7 +246,7 @@ namespace stan {
 
       parser.print(info);
       info();
-      
+
       if (output_stream) {
         io::write_stan(sample_writer);
         io::write_model(sample_writer, model.model_name());
@@ -281,11 +282,11 @@ namespace stan {
 
           double error = dynamic_cast<stan::services::real_argument*>
                          (test->arg("gradient")->arg("error"))->value();
-          
+
           return stan::services::diagnose::diagnose(cont_params, model,
                                                     epsilon, error,
                                                     info, sample_writer);
-          
+
         }
       }
 
@@ -309,6 +310,14 @@ namespace stan {
           = dynamic_cast<stan::services::bool_argument*>(parser.arg("method")
                                          ->arg("optimize")
                                          ->arg("save_iterations"))->value();
+        if (algo->value() == "newton") {
+          interface_callbacks::interrupt::noop interrupt;
+          return stan::services::optimize::newton(model, base_rng, cont_params,
+                                                  num_iterations, save_iterations,
+                                                  interrupt,
+                                                  info, sample_writer);
+        }
+
         if (output_stream) {
           std::vector<std::string> names;
           names.push_back("lp__");
@@ -323,47 +332,8 @@ namespace stan {
 
         double lp(0);
         int return_code = stan::services::error_codes::CONFIG;
-        if (algo->value() == "newton") {
-          std::vector<double> gradient;
-          try {
-            lp = model.template log_prob<false, false>
-              (cont_vector, disc_vector, &std::cout);
-          } catch (const std::exception& e) {
-            io::write_error_msg(info, e);
-            lp = -std::numeric_limits<double>::infinity();
-          }
 
-          std::cout << "initial log joint probability = " << lp << std::endl;
-          if (save_iterations) {
-            io::write_iteration(model, base_rng,
-                                lp, cont_vector, disc_vector,
-                                info, sample_writer);
-          }
-
-          double lastlp = lp * 1.1;
-          int m = 0;
-          std::cout << "(lp - lastlp) / lp > 1e-8: "
-                    << ((lp - lastlp) / fabs(lp)) << std::endl;
-          while ((lp - lastlp) / fabs(lp) > 1e-8) {
-            lastlp = lp;
-            lp = stan::optimization::newton_step
-              (model, cont_vector, disc_vector);
-            std::cout << "Iteration ";
-            std::cout << std::setw(2) << (m + 1) << ". ";
-            std::cout << "Log joint probability = " << std::setw(10) << lp;
-            std::cout << ". Improved by " << (lp - lastlp) << ".";
-            std::cout << std::endl;
-            std::cout.flush();
-            m++;
-
-            if (save_iterations) {
-              io::write_iteration(model, base_rng,
-                                  lp, cont_vector, disc_vector,
-                                  info, sample_writer);
-            }
-          }
-          return_code = stan::services::error_codes::OK;
-        } else if (algo->value() == "bfgs") {
+        if (algo->value() == "bfgs") {
           interface_callbacks::interrupt::noop callback;
           typedef stan::optimization::BFGSLineSearch
             <Model,stan::optimization::BFGSUpdate_HInv<> > Optimizer;
@@ -825,7 +795,7 @@ namespace stan {
           names.push_back("lp__");
           model.constrained_param_names(names, true, true);
           sample_writer(names);
-          
+
           stan::variational::advi<Model,
                                   stan::variational::normal_meanfield,
                                   rng_t>
