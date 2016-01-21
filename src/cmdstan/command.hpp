@@ -81,6 +81,7 @@
 #include <stan/services/arguments/valued_argument.hpp>
 #include <stan/services/diagnose/diagnose.hpp>
 #include <stan/services/sample/mcmc_writer.hpp>
+#include <stan/services/sample/fixed_param.hpp>
 #include <stan/mcmc/fixed_param_sampler.hpp>
 #include <stan/mcmc/hmc/static/adapt_unit_e_static_hmc.hpp>
 #include <stan/mcmc/hmc/static/adapt_diag_e_static_hmc.hpp>
@@ -264,7 +265,7 @@ namespace stan {
           (init, cont_params, model, base_rng, info,
            var_context_factory))
         return stan::services::error_codes::SOFTWARE;
-
+      
       //////////////////////////////////////////////////
       //               Model Diagnostics              //
       //////////////////////////////////////////////////
@@ -287,6 +288,9 @@ namespace stan {
         }
       }
 
+
+      interface_callbacks::interrupt::noop interrupt;
+      
       //////////////////////////////////////////////////
       //           Optimization Algorithms            //
       //////////////////////////////////////////////////
@@ -303,8 +307,6 @@ namespace stan {
           = dynamic_cast<stan::services::bool_argument*>(parser.arg("method")
                                          ->arg("optimize")
                                          ->arg("save_iterations"))->value();
-
-        interface_callbacks::interrupt::noop interrupt;
 
         if (algo->value() == "newton") {
           return_code = stan::services::optimize::newton(model, base_rng,
@@ -400,6 +402,45 @@ namespace stan {
       //////////////////////////////////////////////////
 
       if (parser.arg("method")->arg("sample")) {
+        
+        stan::services::list_argument* algo
+          = dynamic_cast<stan::services::list_argument*>
+          (parser.arg("method")->arg("sample")->arg("algorithm"));
+
+        if (algo->value() == "fixed_param") {
+          int num_warmup = dynamic_cast<stan::services::int_argument*>(
+                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
+
+          int num_samples = dynamic_cast<stan::services::int_argument*>(
+                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
+
+          int num_thin = dynamic_cast<stan::services::int_argument*>(
+                         parser.arg("method")->arg("sample")->arg("thin"))->value();
+
+          if (num_warmup != 0) {
+            info("Warning: warmup will be skipped "
+                 "for the fixed parameter sampler!");
+          }
+          
+          return services::sample::fixed_param(model,
+                                               base_rng,
+                                               cont_params,
+                                               num_samples,
+                                               num_thin,
+                                               refresh,
+                                               interrupt,
+                                               sample_writer,
+                                               diagnostic_writer,
+                                               info);
+        }
+        
+
+        
+        //------------------------------------------------------------
+        // FIXME: old stuff here
+
+        
+        
         // Check timing
         clock_t start_check = clock();
 
@@ -422,7 +463,7 @@ namespace stan {
         std::cout << "Adjust your expectations accordingly!"
                   << std::endl << std::endl;
         std::cout << std::endl;
-
+        
         stan::services::sample::mcmc_writer<Model,
                                             interface_callbacks::writer::stream_writer,
                                             interface_callbacks::writer::stream_writer,
@@ -449,10 +490,6 @@ namespace stan {
 
         // Sampler
         stan::mcmc::base_mcmc* sampler_ptr = 0;
-
-        stan::services::list_argument* algo
-          = dynamic_cast<stan::services::list_argument*>
-            (parser.arg("method")->arg("sample")->arg("algorithm"));
 
         stan::services::categorical_argument* adapt
           = dynamic_cast<stan::services::categorical_argument*>
