@@ -465,36 +465,36 @@ namespace stan {
             = dynamic_cast<stan::services::bool_argument*>(adapt->arg("engaged"))
             ->value();
           
-          // 12 calls
+          int num_warmup = dynamic_cast<stan::services::int_argument*>(
+                          parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
+
+          int num_samples = dynamic_cast<stan::services::int_argument*>(
+                          parser.arg("method")->arg("sample")->arg("num_samples"))->value();
+
+          int num_thin = dynamic_cast<stan::services::int_argument*>(
+                       parser.arg("method")->arg("sample")->arg("thin"))->value();
+
+          bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
+                       parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
+
+          stan::services::categorical_argument* hmc
+            = dynamic_cast<stan::services::categorical_argument*>
+            (algo->arg("hmc"));
+          
+          double stepsize
+            = dynamic_cast<stan::services::real_argument*>
+            (hmc->arg("stepsize"))->value();
+          double stepsize_jitter
+            = dynamic_cast<stan::services::real_argument*>
+            (hmc->arg("stepsize_jitter"))->value();
+
           if (engine->value() == "static"
               && metric->value() == "unit_e"
               && adapt_engaged == false) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("static"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             double int_time
               = dynamic_cast<stan::services::real_argument*>(base->arg("int_time"))
               ->value();
@@ -514,36 +514,14 @@ namespace stan {
                                                              sample_writer,
                                                              diagnostic_writer,
                                                              info);
-            // hmc_static_unit
           } else if (engine->value() == "static"
               && metric->value() == "unit_e"
               && adapt_engaged == true) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
 
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("static"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             double int_time
               = dynamic_cast<stan::services::real_argument*>(base->arg("int_time"))
               ->value();
@@ -560,7 +538,6 @@ namespace stan {
               = dynamic_cast<real_argument*>(adapt->arg("kappa"))->value();
             double t0
               = dynamic_cast<real_argument*>(adapt->arg("t0"))->value();
-            
             
             return stan::services::sample::hmc_static_unit_e_adapt(model,
                                                                    base_rng,
@@ -580,37 +557,14 @@ namespace stan {
                                                                    interrupt,
                                                                    sample_writer,
                                                                    diagnostic_writer,
-                                                                   info);
-            
+                                                                   info);            
           } else if (engine->value() == "static"
                      && metric->value() == "diag_e"
                      && adapt_engaged == false) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("static"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             double int_time
               = dynamic_cast<stan::services::real_argument*>(base->arg("int_time"))
               ->value();
@@ -633,32 +587,10 @@ namespace stan {
           } else if (engine->value() == "static"
                      && metric->value() == "diag_e"
                      && adapt_engaged == true) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("static"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             double int_time
               = dynamic_cast<stan::services::real_argument*>(base->arg("int_time"))
               ->value();
@@ -708,32 +640,10 @@ namespace stan {
           } else if (engine->value() == "static"
                      && metric->value() == "dense_e"
                      && adapt_engaged == false) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("static"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             double int_time
               = dynamic_cast<stan::services::real_argument*>(base->arg("int_time"))
               ->value();
@@ -756,32 +666,10 @@ namespace stan {
           } else if (engine->value() == "static"
                      && metric->value() == "dense_e"
                      && adapt_engaged == true) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("static"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             double int_time
               = dynamic_cast<stan::services::real_argument*>(base->arg("int_time"))
               ->value();
@@ -831,32 +719,10 @@ namespace stan {
           } else if (engine->value() == "nuts"
                      && metric->value() == "unit_e"
                      && adapt_engaged == false) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("nuts"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             int max_depth
               = dynamic_cast<stan::services::int_argument*>(base->arg("max_depth"))
               ->value();
@@ -879,32 +745,10 @@ namespace stan {
           } else if (engine->value() == "nuts"
                      && metric->value() == "unit_e"
                      && adapt_engaged == true) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("nuts"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             int max_depth
               = dynamic_cast<stan::services::int_argument*>(base->arg("max_depth"))
               ->value();
@@ -944,32 +788,10 @@ namespace stan {
           } else if (engine->value() == "nuts"
                      && metric->value() == "diag_e"
                      && adapt_engaged == false) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("nuts"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             int max_depth
               = dynamic_cast<stan::services::int_argument*>(base->arg("max_depth"))
               ->value();
@@ -992,32 +814,13 @@ namespace stan {
           } else if (engine->value() == "nuts"
                      && metric->value() == "diag_e"
                      && adapt_engaged == true) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
 
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
 
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
 
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("nuts"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             int max_depth
               = dynamic_cast<stan::services::int_argument*>(base->arg("max_depth"))
               ->value();
@@ -1067,32 +870,10 @@ namespace stan {
           } else if (engine->value() == "nuts"
                      && metric->value() == "dense_e"
                      && adapt_engaged == false) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
-
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
-
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("nuts"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             int max_depth
               = dynamic_cast<stan::services::int_argument*>(base->arg("max_depth"))
               ->value();
@@ -1115,32 +896,12 @@ namespace stan {
           } else if (engine->value() == "nuts"
                      && metric->value() == "dense_e"
                      && adapt_engaged == true) {
-            int num_warmup = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_warmup"))->value();
 
-            int num_samples = dynamic_cast<stan::services::int_argument*>(
-                            parser.arg("method")->arg("sample")->arg("num_samples"))->value();
-
-            int num_thin = dynamic_cast<stan::services::int_argument*>(
-                         parser.arg("method")->arg("sample")->arg("thin"))->value();
-
-            bool save_warmup = dynamic_cast<stan::services::bool_argument*>(
-                         parser.arg("method")->arg("sample")->arg("save_warmup"))->value();
-
-            stan::services::categorical_argument* hmc
-              = dynamic_cast<stan::services::categorical_argument*>
-              (algo->arg("hmc"));
 
             stan::services::categorical_argument* base
               = dynamic_cast<stan::services::categorical_argument*>
               (algo->arg("hmc")->arg("engine")->arg("nuts"));
 
-            double stepsize
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize"))->value();
-            double stepsize_jitter
-              = dynamic_cast<stan::services::real_argument*>
-              (hmc->arg("stepsize_jitter"))->value();
             int max_depth
               = dynamic_cast<stan::services::int_argument*>(base->arg("max_depth"))
               ->value();
@@ -1196,8 +957,6 @@ namespace stan {
       //////////////////////////////////////////////////
       //           VARIATIONAL Algorithms             //
       //////////////////////////////////////////////////
-
-
       if (parser.arg("method")->arg("variational")) {
         stan::services::list_argument* algo
           = dynamic_cast<stan::services::list_argument*>(parser.arg("method")
