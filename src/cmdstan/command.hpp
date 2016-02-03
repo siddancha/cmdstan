@@ -1084,7 +1084,7 @@ namespace stan {
         delete diagnostic_stream;
       }
 
-      return 0;
+      return stan::services::error_codes::OK;
     }
 
   }  // namespace services
