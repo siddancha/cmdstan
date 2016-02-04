@@ -110,15 +110,9 @@
 #include <stan/services/io/write_iteration.hpp>
 #include <stan/services/io/write_model.hpp>
 #include <stan/services/io/write_stan.hpp>
-#include <stan/services/mcmc/sample.hpp>
-#include <stan/services/mcmc/warmup.hpp>
 #include <stan/services/optimize/bfgs.hpp>
 #include <stan/services/optimize/lbfgs.hpp>
 #include <stan/services/optimize/newton.hpp>
-#include <stan/services/sample/init_adapt.hpp>
-#include <stan/services/sample/init_nuts.hpp>
-#include <stan/services/sample/init_static_hmc.hpp>
-#include <stan/services/sample/init_windowed_adapt.hpp>
 #include <stan/services/sample/generate_transitions.hpp>
 #include <stan/services/sample/progress.hpp>
 
