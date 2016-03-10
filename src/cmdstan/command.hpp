@@ -286,10 +286,11 @@ namespace stan {
           double error = dynamic_cast<stan::services::real_argument*>
                          (test->arg("gradient")->arg("error"))->value();
 
-          return stan::services::diagnose::diagnose(cont_params, model,
-                                                    epsilon, error,
-                                                    info, sample_writer);
-
+          // do something with the return value?
+          stan::services::diagnose::diagnose(model, cont_params,
+                                             epsilon, error,
+                                             info, sample_writer);
+          return stan::services::error_codes::OK;
         }
       }
 
