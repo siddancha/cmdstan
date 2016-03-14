@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_NUTS_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_NUTS_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_NUTS_HPP
+#define CMDSTAN_ARGUMENTS_ARG_NUTS_HPP
 
 #include <cmdstan/arguments/categorical_argument.hpp>
 #include <cmdstan/arguments/arg_max_depth.hpp>

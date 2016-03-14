@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_DATA_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_DATA_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_DATA_HPP
+#define CMDSTAN_ARGUMENTS_ARG_DATA_HPP
 
 #include <cmdstan/arguments/categorical_argument.hpp>
 

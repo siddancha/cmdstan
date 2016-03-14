@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_VARIATIONAL_ADAPT_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_VARIATIONAL_ADAPT_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_VARIATIONAL_ADAPT_HPP
+#define CMDSTAN_ARGUMENTS_ARG_VARIATIONAL_ADAPT_HPP
 
 #include <cmdstan/arguments/categorical_argument.hpp>
 #include <cmdstan/arguments/arg_variational_adapt_engaged.hpp>

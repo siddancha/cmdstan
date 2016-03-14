@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_SEED_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_SEED_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_SEED_HPP
+#define CMDSTAN_ARGUMENTS_ARG_SEED_HPP
 
 #include <cmdstan/arguments/singleton_argument.hpp>
 

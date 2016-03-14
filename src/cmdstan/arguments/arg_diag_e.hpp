@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_DIAG_E_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_DIAG_E_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_DIAG_E_HPP
+#define CMDSTAN_ARGUMENTS_ARG_DIAG_E_HPP
 
 #include <cmdstan/arguments/unvalued_argument.hpp>
 

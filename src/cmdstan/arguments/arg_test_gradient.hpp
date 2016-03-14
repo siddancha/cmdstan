@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_TEST_GRADIENT_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_TEST_GRADIENT_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_TEST_GRADIENT_HPP
+#define CMDSTAN_ARGUMENTS_ARG_TEST_GRADIENT_HPP
 
 #include <cmdstan/arguments/categorical_argument.hpp>
 #include <cmdstan/arguments/arg_test_grad_eps.hpp>

@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_FAIL_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_FAIL_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_FAIL_HPP
+#define CMDSTAN_ARGUMENTS_ARG_FAIL_HPP
 
 #include <cmdstan/arguments/unvalued_argument.hpp>
 

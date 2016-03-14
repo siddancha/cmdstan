@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_LIST_ARGUMENT_HPP
-#define STAN_SERVICES_ARGUMENTS_LIST_ARGUMENT_HPP
+#ifndef CMDSTAN_ARGUMENTS_LIST_ARGUMENT_HPP
+#define CMDSTAN_ARGUMENTS_LIST_ARGUMENT_HPP
 
 #include <stan/interface_callbacks/writer/base_writer.hpp>
 #include <cmdstan/arguments/valued_argument.hpp>

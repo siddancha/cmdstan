@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARGUMENT_PROBE_HPP
-#define STAN_SERVICES_ARGUMENTS_ARGUMENT_PROBE_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARGUMENT_PROBE_HPP
+#define CMDSTAN_ARGUMENTS_ARGUMENT_PROBE_HPP
 
 #include <stan/interface_callbacks/writer/base_writer.hpp>
 #include <cmdstan/arguments/argument.hpp>

@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARG_LBFGS_HPP
-#define STAN_SERVICES_ARGUMENTS_ARG_LBFGS_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARG_LBFGS_HPP
+#define CMDSTAN_ARGUMENTS_ARG_LBFGS_HPP
 
 #include <cmdstan/arguments/arg_bfgs.hpp>
 #include <cmdstan/arguments/arg_history_size.hpp>

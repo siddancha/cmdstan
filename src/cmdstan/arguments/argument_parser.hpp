@@ -1,5 +1,5 @@
-#ifndef STAN_SERVICES_ARGUMENTS_ARGUMENT_PARSER_HPP
-#define STAN_SERVICES_ARGUMENTS_ARGUMENT_PARSER_HPP
+#ifndef CMDSTAN_ARGUMENTS_ARGUMENT_PARSER_HPP
+#define CMDSTAN_ARGUMENTS_ARGUMENT_PARSER_HPP
 
 #include <cmdstan/arguments/argument.hpp>
 #include <cmdstan/arguments/arg_method.hpp>
