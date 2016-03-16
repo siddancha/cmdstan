@@ -105,11 +105,8 @@
 
 #include <stan/variational/advi.hpp>
 #include <stan/services/init/initialize_state.hpp>
-#include <stan/services/io/do_print.hpp>
-#include <stan/services/io/write_error_msg.hpp>
-#include <stan/services/io/write_iteration.hpp>
-#include <stan/services/io/write_model.hpp>
-#include <stan/services/io/write_stan.hpp>
+#include <stan/io/write_model.hpp>
+#include <stan/io/write_stan.hpp>
 #include <stan/services/optimize/bfgs.hpp>
 #include <stan/services/optimize/lbfgs.hpp>
 #include <stan/services/optimize/newton.hpp>
