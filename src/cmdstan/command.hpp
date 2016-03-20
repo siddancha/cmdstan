@@ -7,6 +7,11 @@
 #include <boost/random/uniform_real_distribution.hpp>
 
 #include <stan/version.hpp>
+#include <stan/bdmc/ais.hpp>
+#include <stan/bdmc/init.hpp>
+#include <stan/bdmc/io.hpp>
+#include <stan/bdmc/progress.hpp>
+#include <stan/bdmc/schedules.hpp>
 #include <stan/io/cmd_line.hpp>
 #include <stan/io/dump.hpp>
 #include <stan/io/json/json_data.hpp>
@@ -135,7 +140,7 @@ namespace stan {
     int command(int argc, const char* argv[]) {
       stan::interface_callbacks::writer::stream_writer info(std::cout);
       stan::interface_callbacks::writer::stream_writer err(std::cout);
-      
+
       std::vector<stan::services::argument*> valid_arguments;
       valid_arguments.push_back(new stan::services::arg_id());
       valid_arguments.push_back(new stan::services::arg_data());
@@ -166,7 +171,7 @@ namespace stan {
                                std::fstream::in);
       stan::io::dump data_var_context(data_stream);
       data_stream.close();
-      
+
       // Sample output
       std::string output_file = dynamic_cast<stan::services::string_argument*>(
                                 parser.arg("output")->arg("file"))->value();
@@ -178,7 +183,7 @@ namespace stan {
         output_stream = new null_fstream();
       }
 
-      
+
       // Diagnostic output
       std::string diagnostic_file
         = dynamic_cast<stan::services::string_argument*>
@@ -195,7 +200,7 @@ namespace stan {
       // Refresh rate
       int refresh = dynamic_cast<stan::services::int_argument*>(
                     parser.arg("output")->arg("refresh"))->value();
-      
+
       // Identification
       unsigned int id = dynamic_cast<stan::services::int_argument*>
         (parser.arg("id"))->value();
@@ -245,7 +250,7 @@ namespace stan {
 
       parser.print(info);
       info();
-      
+
       if (output_stream) {
         io::write_stan(sample_writer);
         io::write_model(sample_writer, model.model_name());
@@ -751,6 +756,470 @@ namespace stan {
       }
 
       //////////////////////////////////////////////////
+      //          Bi-Directional Monte Carlo          //
+      //////////////////////////////////////////////////
+
+      if (parser.arg("method")->arg("bdmc")) {
+        // Check timing
+        clock_t start_check = clock();
+
+        double init_log_prob;
+        Eigen::VectorXd init_grad = Eigen::VectorXd::Zero(model.num_params_r());
+
+        stan::model::gradient(model, cont_params, init_log_prob,
+                              init_grad, &std::cout);
+
+        clock_t end_check = clock();
+        double deltaT
+          = static_cast<double>(end_check - start_check) / CLOCKS_PER_SEC;
+
+        std::cout << std::endl;
+        std::cout << "Gradient evaluation took " << deltaT
+                  << " seconds" << std::endl;
+        std::cout << "1000 transitions using 10 leapfrog steps "
+                  << "per transition would take "
+                  << 1e4 * deltaT << " seconds." << std::endl;
+        std::cout << "Adjust your expectations accordingly!"
+                  << std::endl << std::endl;
+        std::cout << std::endl;
+
+        stan::services::sample::mcmc_writer<Model,
+                                            interface_callbacks::writer::stream_writer,
+                                            interface_callbacks::writer::stream_writer,
+                                            interface_callbacks::writer::stream_writer>
+          writer(sample_writer, diagnostic_writer, info);
+
+        // BDMC parameters
+        // int ais_steps = dynamic_cast<stan::services::int_argument*>(
+        //                 parser.arg("method")->arg("bdmc")->arg("ais")
+        //                 ->arg("num_steps"))->value();
+        int ais_weights = dynamic_cast<stan::services::int_argument*>(
+                        parser.arg("method")->arg("bdmc")->arg("ais")
+                        ->arg("num_weights"))->value();
+        // int rais_steps = dynamic_cast<stan::services::int_argument*>(
+        //                  parser.arg("method")->arg("bdmc")->arg("rais")
+        //                  ->arg("num_steps"))->value();
+        int rais_weights = dynamic_cast<stan::services::int_argument*>(
+                           parser.arg("method")->arg("bdmc")->arg("rais")
+                           ->arg("num_weights"))->value();
+        int start_steps = dynamic_cast<stan::services::int_argument*>(
+                          parser.arg("method")->arg("bdmc")->arg("iterations")
+                          ->arg("start_steps"))->value();
+        int increment = dynamic_cast<stan::services::int_argument*>(
+                        parser.arg("method")->arg("bdmc")->arg("iterations")
+                        ->arg("increment"))->value();
+        int num_iter = dynamic_cast<stan::services::int_argument*>(
+                       parser.arg("method")->arg("bdmc")->arg("iterations")
+                       ->arg("num_iter"))->value();
+        bool sample_data = dynamic_cast<stan::services::bool_argument*>(
+                           parser.arg("method")->arg("bdmc")->arg("ais")
+                           ->arg("sample_data"))->value();
+        int num_data = dynamic_cast<stan::services::int_argument*>(
+                       parser.arg("method")->arg("bdmc")
+                       ->arg("num_data"))->value();
+
+        std::string load_file
+        = dynamic_cast<stan::services::string_argument*>
+        (parser.arg("method")->arg("bdmc")->arg("exact_sample")
+         ->arg("load_file"))->value();
+
+        std::string save_file
+        = dynamic_cast<stan::services::string_argument*>
+        (parser.arg("method")->arg("bdmc")->arg("exact_sample")
+         ->arg("save_file"))->value();
+
+        stan::services::list_argument* schedule
+          = dynamic_cast<stan::services::list_argument*>
+            (parser.arg("method")->arg("bdmc")->arg("schedule"));
+
+        double delta = 0.0;
+        std::string schedule_name = schedule->value();
+        if (schedule_name == "sigmoidal")
+          delta = dynamic_cast<stan::services::real_argument*>(
+                  parser.arg("method")->arg("bdmc")->arg("schedule")
+                  ->arg("sigmoidal")->arg("delta"))->value();
+
+        stan::bdmc::schedule bdmc_schedule(schedule_name, delta);
+
+        // int num_warmup = std::min(ais_steps, rais_steps);
+        int num_warmup = start_steps;
+
+
+        stan::mcmc::sample s(cont_params, 0, 0);
+
+        // Sampler
+        stan::mcmc::base_mcmc* sampler_ptr = 0;
+
+        stan::services::list_argument* algo
+          = dynamic_cast<stan::services::list_argument*>
+            (parser.arg("method")->arg("bdmc")->arg("algorithm"));
+
+        stan::services::categorical_argument* adapt
+          = dynamic_cast<stan::services::categorical_argument*>
+            (parser.arg("method")->arg("bdmc")->arg("adapt"));
+        bool adapt_engaged
+          = dynamic_cast<stan::services::bool_argument*>(adapt->arg("engaged"))
+            ->value();
+
+        if (model.num_params_r() == 0 && algo->value() != "fixed_param") {
+          std::cout
+            << "Must use algorithm=fixed_param for "
+            << "model that has no parameters."
+            << std::endl;
+          return -1;
+        }
+
+        if (algo->value() == "fixed_param") {
+          sampler_ptr = new stan::mcmc::fixed_param_sampler();
+
+          adapt_engaged = false;
+
+        } else if (algo->value() == "rwm") {
+          std::cout << algo->arg("rwm")->description() << std::endl;
+          return 0;
+
+        } else if (algo->value() == "hmc") {
+          int engine_index = 0;
+
+          stan::services::list_argument* engine
+            = dynamic_cast<stan::services::list_argument*>
+              (algo->arg("hmc")->arg("engine"));
+
+          if (engine->value() == "static") {
+            engine_index = 0;
+          } else if (engine->value() == "nuts") {
+            engine_index = 1;
+          }
+
+          int metric_index = 0;
+          stan::services::list_argument* metric
+            = dynamic_cast<stan::services::list_argument*>
+              (algo->arg("hmc")->arg("metric"));
+          if (metric->value() == "unit_e") {
+            metric_index = 0;
+          } else if (metric->value() == "diag_e") {
+            metric_index = 1;
+          } else if (metric->value() == "dense_e") {
+            metric_index = 2;
+          }
+
+          int sampler_select = engine_index
+            + 10 * metric_index
+            + 100 * static_cast<int>(adapt_engaged);
+
+          std::cout << "sampler_select - " << sampler_select << std::endl;
+
+          switch (sampler_select) {
+            case 0: {
+              typedef stan::mcmc::unit_e_static_hmc<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_static_hmc<sampler>(sampler_ptr, algo))
+                return 0;
+              break;
+            }
+
+            case 1: {
+              typedef stan::mcmc::unit_e_nuts<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_nuts<sampler>(sampler_ptr, algo))
+                return 0;
+              break;
+            }
+
+            case 10: {
+              typedef stan::mcmc::diag_e_static_hmc<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_static_hmc<sampler>(sampler_ptr, algo))
+                return 0;
+              break;
+            }
+
+            case 11: {
+              typedef stan::mcmc::diag_e_nuts<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_nuts<sampler>(sampler_ptr, algo))
+                return 0;
+              break;
+            }
+
+            case 20: {
+              typedef stan::mcmc::dense_e_static_hmc<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_static_hmc<sampler>(sampler_ptr, algo))
+                return 0;
+              break;
+            }
+
+            case 21: {
+              typedef stan::mcmc::dense_e_nuts<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_nuts<sampler>(sampler_ptr, algo))
+                return 0;
+              break;
+            }
+
+            case 100: {
+              typedef stan::mcmc::adapt_unit_e_static_hmc<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_static_hmc<sampler>(sampler_ptr, algo))
+                return 0;
+              if (!sample::init_adapt<sampler>(sampler_ptr,
+                                               adapt, cont_params,
+                                               info))
+                return 0;
+              break;
+            }
+
+            case 101: {
+              typedef stan::mcmc::adapt_unit_e_nuts<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_nuts<sampler>(sampler_ptr, algo))
+                return 0;
+              if (!sample::init_adapt<sampler>(sampler_ptr,
+                                               adapt, cont_params,
+                                               info))
+                return 0;
+              break;
+            }
+
+            case 110: {
+              typedef stan::mcmc::adapt_diag_e_static_hmc<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_static_hmc<sampler>(sampler_ptr, algo))
+                return 0;
+              if (!sample::init_windowed_adapt<sampler>(sampler_ptr, adapt, num_warmup,
+                                                        cont_params, info))
+                return 0;
+              break;
+            }
+
+            case 111: {
+              typedef stan::mcmc::adapt_diag_e_nuts<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_nuts<sampler>(sampler_ptr, algo))
+                return 0;
+              if (!sample::init_windowed_adapt<sampler>(sampler_ptr, adapt, num_warmup,
+                                                        cont_params, info))
+                return 0;
+              break;
+            }
+
+            case 120: {
+              typedef stan::mcmc::adapt_dense_e_static_hmc<Model, rng_t>
+                sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_static_hmc<sampler>(sampler_ptr, algo))
+                return 0;
+              if (!sample::init_windowed_adapt<sampler>(sampler_ptr, adapt, num_warmup,
+                                                        cont_params, info))
+                return 0;
+              break;
+            }
+
+            case 121: {
+              typedef stan::mcmc::adapt_dense_e_nuts<Model, rng_t> sampler;
+              sampler_ptr = new sampler(model, base_rng);
+              if (!sample::init_nuts<sampler>(sampler_ptr, algo))
+                return 0;
+              if (!sample::init_windowed_adapt<sampler>(sampler_ptr, adapt, num_warmup,
+                                                        cont_params, info))
+                return 0;
+              break;
+            }
+
+            default:
+              std::cout << "No sampler matching HMC specification!"
+                        << std::endl;
+              return 0;
+          }
+        }
+
+        stan::bdmc::progress_bar progress = stan::bdmc::progress_bar(
+          std::cout, ais_weights, rais_weights, start_steps,
+          increment, num_iter);
+
+
+        std::vector<double> vars_param_prior;
+        std::vector<double> vars_param_posterior;
+        std::vector<double> vars_data;
+
+        if (load_file == "") {
+          stan::bdmc::sample_data_and_params(model,
+                                             vars_param_posterior,
+                                             vars_data,
+                                             base_rng);
+        } else {
+          stan::bdmc::load_exact_sample (load_file,
+                                         vars_param_prior,
+                                         vars_param_posterior,
+                                         vars_data,
+                                         model);
+        }
+
+        // posterior sample
+        Eigen::VectorXd posterior_params;
+        stan::bdmc::set_params(model, posterior_params, vars_param_posterior);
+
+        // prior sample
+        Eigen::VectorXd prior_params;
+        if (load_file == "") {
+          std::vector<double> dummy_data;
+          stan::bdmc::sample_data_and_params(model,
+                                             vars_param_prior,
+                                             dummy_data,
+                                             base_rng);
+        }
+        stan::bdmc::set_params(model, prior_params, vars_param_prior);
+
+        if (sample_data) stan::bdmc::set_data(model, vars_data);
+
+        if (load_file == "" && save_file != "") {
+          stan::bdmc::save_exact_sample (save_file,
+                                         vars_param_prior,
+                                         vars_param_posterior,
+                                         vars_data);
+        }
+
+        // // prior and posterior samples
+        // Eigen::VectorXd posterior_params;
+        // stan::bdmc::initialize_with_prior_and_exact_sample(posterior_params,
+        //                                                    model,
+        //                                                    base_rng);
+
+        // Eigen::VectorXd prior_params;
+        // if (!sample_data) model = Model(data_var_context, &std::cout);
+        // stan::bdmc::initialize_with_prior(prior_params, model, base_rng);
+
+
+        std::vector<double> rais_means;
+        std::vector<double> rais_vars;
+        std::vector<double> rais_times;
+
+        std::vector<double> ais_means;
+        std::vector<double> ais_vars;
+        std::vector<double> ais_times;
+
+        int num_iter_index = 0;
+        int num_steps = start_steps;
+
+        clock_t total_start = clock();
+        // TODO: Remove wrappers in Eigen::VectorXd(prior/posterior_params)
+        while (true) {
+          num_iter_index += 1;
+
+          double weight_avg = 0;
+          double weight_sqr_avg = 0;
+          double time_avg = 0;
+
+          // rais
+          for (int rais_index = 1; rais_index <= rais_weights; rais_index++) {
+            stan::mcmc::sample posterior_sample(Eigen::VectorXd(posterior_params), 0, 0);
+            clock_t start = clock();
+            double weight = stan::bdmc::rais(sampler_ptr,
+                                             num_steps,
+                                             bdmc_schedule,
+                                             posterior_sample,
+                                             model,
+                                             base_rng,
+                                             progress,
+                                             num_iter_index,
+                                             rais_index,
+                                             sample_writer);
+            clock_t end = clock();
+            weight_avg += weight;
+            weight_sqr_avg += weight*weight;
+            time_avg += static_cast<double>(end - start) / CLOCKS_PER_SEC;
+          }
+          weight_avg = weight_avg/rais_weights;
+          weight_sqr_avg = weight_sqr_avg/rais_weights;
+          time_avg = time_avg/rais_weights;
+          rais_means.push_back(weight_avg/num_data);
+          rais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg)/num_data);
+          rais_times.push_back(time_avg);
+
+          weight_avg = 0;
+          weight_sqr_avg = 0;
+          time_avg = 0;
+
+          // ais
+          for (int ais_index = 1; ais_index <= ais_weights; ais_index++) {
+            stan::mcmc::sample prior_sample(Eigen::VectorXd(prior_params), 0, 0);
+            clock_t start = clock();
+            double weight = stan::bdmc::ais(sampler_ptr,
+                                            num_steps,
+                                            bdmc_schedule,
+                                            prior_sample,
+                                            model,
+                                            base_rng,
+                                            progress,
+                                            num_iter_index,
+                                            ais_index,
+                                            sample_writer);
+            clock_t end = clock();
+            weight_avg += weight;
+            weight_sqr_avg += weight*weight;
+            time_avg += static_cast<double>(end - start) / CLOCKS_PER_SEC;
+          }
+          weight_avg = weight_avg/ais_weights;
+          weight_sqr_avg = weight_sqr_avg/ais_weights;
+          time_avg = time_avg/ais_weights;
+          ais_means.push_back(weight_avg/num_data);
+          ais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg)/num_data);
+          ais_times.push_back(time_avg);
+
+          if (num_iter_index == num_iter)
+            break;
+
+          num_steps += increment;
+        }
+        clock_t total_end = clock();
+
+        std::cout << "\n\nElapsed Time : "
+                  << static_cast<double>(total_end - total_start)/CLOCKS_PER_SEC
+                  << " seconds.\n\n";
+
+        std::cout << "#----- RESULTS -----\n";
+        std::cout << "#---- AIS ----\n";
+        std::cout << "aisMeans      = " << "[";
+        for (int i = 0; i < ais_means.size(); i++) {
+          std::cout << ais_means[i];
+          if (i < ais_means.size()-1) std::cout << ", ";
+        }
+        std::cout << "]\n";
+        std::cout << "aisVariances  = " << "[";
+        for (int i = 0; i < ais_vars.size(); i++) {
+          std::cout << ais_vars[i];
+          if (i < ais_vars.size()-1) std::cout << ", ";
+        }
+        std::cout << "]\n";
+        std::cout << "aisTimes      = " << "[";
+        for (int i = 0; i < ais_times.size(); i++) {
+          std::cout << ais_times[i];
+          if (i < ais_times.size()-1) std::cout << ", ";
+        }
+        std::cout << "]\n";
+        std::cout << "#-- Rev-AIS --\n";
+        std::cout << "raisMeans     = " << "[";
+        for (int i = 0; i < rais_means.size(); i++) {
+          std::cout << rais_means[i];
+          if (i < rais_means.size()-1) std::cout << ", ";
+        }
+        std::cout << "]\n";
+        std::cout << "raisVariances = " << "[";
+        for (int i = 0; i < rais_vars.size(); i++) {
+          std::cout << rais_vars[i];
+          if (i < rais_vars.size()-1) std::cout << ", ";
+        }
+        std::cout << "]\n";
+        std::cout << "raisTimes     = " << "[";
+        for (int i = 0; i < rais_times.size(); i++) {
+          std::cout << rais_times[i];
+          if (i < rais_times.size()-1) std::cout << ", ";
+        }
+        std::cout << "]\n";
+      }
+
+      //////////////////////////////////////////////////
       //           VARIATIONAL Algorithms             //
       //////////////////////////////////////////////////
 
@@ -855,7 +1324,7 @@ namespace stan {
           names.push_back("lp__");
           model.constrained_param_names(names, true, true);
           sample_writer(names);
-          
+
           stan::variational::advi<Model,
                                   stan::variational::normal_meanfield,
                                   rng_t>
