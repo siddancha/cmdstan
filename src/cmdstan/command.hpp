@@ -1181,38 +1181,38 @@ namespace stan {
         std::cout << "#----- RESULTS -----\n";
         std::cout << "#---- AIS ----\n";
         std::cout << "aisMeans      = " << "[";
-        for (int i = 0; i < ais_means.size(); i++) {
+        for (size_t i = 0; i < ais_means.size(); i++) {
           std::cout << ais_means[i];
           if (i < ais_means.size()-1) std::cout << ", ";
         }
         std::cout << "]\n";
         std::cout << "aisVariances  = " << "[";
-        for (int i = 0; i < ais_vars.size(); i++) {
+        for (size_t i = 0; i < ais_vars.size(); i++) {
           std::cout << ais_vars[i];
           if (i < ais_vars.size()-1) std::cout << ", ";
         }
         std::cout << "]\n";
         std::cout << "aisTimes      = " << "[";
-        for (int i = 0; i < ais_times.size(); i++) {
+        for (size_t i = 0; i < ais_times.size(); i++) {
           std::cout << ais_times[i];
           if (i < ais_times.size()-1) std::cout << ", ";
         }
         std::cout << "]\n";
         std::cout << "#-- Rev-AIS --\n";
         std::cout << "raisMeans     = " << "[";
-        for (int i = 0; i < rais_means.size(); i++) {
+        for (size_t i = 0; i < rais_means.size(); i++) {
           std::cout << rais_means[i];
           if (i < rais_means.size()-1) std::cout << ", ";
         }
         std::cout << "]\n";
         std::cout << "raisVariances = " << "[";
-        for (int i = 0; i < rais_vars.size(); i++) {
+        for (size_t i = 0; i < rais_vars.size(); i++) {
           std::cout << rais_vars[i];
           if (i < rais_vars.size()-1) std::cout << ", ";
         }
         std::cout << "]\n";
         std::cout << "raisTimes     = " << "[";
-        for (int i = 0; i < rais_times.size(); i++) {
+        for (size_t i = 0; i < rais_times.size(); i++) {
           std::cout << rais_times[i];
           if (i < rais_times.size()-1) std::cout << ", ";
         }
