@@ -1178,45 +1178,48 @@ namespace stan {
                   << static_cast<double>(total_end - total_start)/CLOCKS_PER_SEC
                   << " seconds.\n\n";
 
-        std::cout << "#----- RESULTS -----\n";
-        std::cout << "#---- AIS ----\n";
-        std::cout << "aisMeans      = " << "[";
-        for (size_t i = 0; i < ais_means.size(); i++) {
-          std::cout << ais_means[i];
-          if (i < ais_means.size()-1) std::cout << ", ";
+        if (output_stream) {
+          *output_stream << "\n\n#----- RESULTS -----\n";
+          *output_stream << "#---- AIS ----\n";
+          *output_stream << "aisMeans      = " << "[";
+          for (size_t i = 0; i < ais_means.size(); i++) {
+            *output_stream << ais_means[i];
+            if (i < ais_means.size()-1) *output_stream << ", ";
+          }
+          *output_stream << "]\n";
+          *output_stream << "aisVariances  = " << "[";
+          for (size_t i = 0; i < ais_vars.size(); i++) {
+            *output_stream << ais_vars[i];
+            if (i < ais_vars.size()-1) *output_stream << ", ";
+          }
+          *output_stream << "]\n";
+          *output_stream << "aisTimes      = " << "[";
+          for (size_t i = 0; i < ais_times.size(); i++) {
+            *output_stream << ais_times[i];
+            if (i < ais_times.size()-1) *output_stream << ", ";
+          }
+          *output_stream << "]\n";
+          *output_stream << "#-- Rev-AIS --\n";
+          *output_stream << "raisMeans     = " << "[";
+          for (size_t i = 0; i < rais_means.size(); i++) {
+            *output_stream << rais_means[i];
+            if (i < rais_means.size()-1) *output_stream << ", ";
+          }
+          *output_stream << "]\n";
+          *output_stream << "raisVariances = " << "[";
+          for (size_t i = 0; i < rais_vars.size(); i++) {
+            *output_stream << rais_vars[i];
+            if (i < rais_vars.size()-1) *output_stream << ", ";
+          }
+          *output_stream << "]\n";
+          *output_stream << "raisTimes     = " << "[";
+          for (size_t i = 0; i < rais_times.size(); i++) {
+            *output_stream << rais_times[i];
+            if (i < rais_times.size()-1) *output_stream << ", ";
+          }
+          *output_stream << "]\n";
         }
-        std::cout << "]\n";
-        std::cout << "aisVariances  = " << "[";
-        for (size_t i = 0; i < ais_vars.size(); i++) {
-          std::cout << ais_vars[i];
-          if (i < ais_vars.size()-1) std::cout << ", ";
-        }
-        std::cout << "]\n";
-        std::cout << "aisTimes      = " << "[";
-        for (size_t i = 0; i < ais_times.size(); i++) {
-          std::cout << ais_times[i];
-          if (i < ais_times.size()-1) std::cout << ", ";
-        }
-        std::cout << "]\n";
-        std::cout << "#-- Rev-AIS --\n";
-        std::cout << "raisMeans     = " << "[";
-        for (size_t i = 0; i < rais_means.size(); i++) {
-          std::cout << rais_means[i];
-          if (i < rais_means.size()-1) std::cout << ", ";
-        }
-        std::cout << "]\n";
-        std::cout << "raisVariances = " << "[";
-        for (size_t i = 0; i < rais_vars.size(); i++) {
-          std::cout << rais_vars[i];
-          if (i < rais_vars.size()-1) std::cout << ", ";
-        }
-        std::cout << "]\n";
-        std::cout << "raisTimes     = " << "[";
-        for (size_t i = 0; i < rais_times.size(); i++) {
-          std::cout << rais_times[i];
-          if (i < rais_times.size()-1) std::cout << ", ";
-        }
-        std::cout << "]\n";
+
       }
 
       //////////////////////////////////////////////////
