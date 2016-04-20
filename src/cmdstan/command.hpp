@@ -802,6 +802,9 @@ namespace stan {
         int rais_weights = dynamic_cast<stan::services::int_argument*>(
                            parser.arg("method")->arg("bdmc")->arg("rais")
                            ->arg("num_weights"))->value();
+        bool save_samples = dynamic_cast<stan::services::bool_argument*>(
+                            parser.arg("method")->arg("bdmc")
+                            ->arg("save_samples"))->value();
         int start_steps = dynamic_cast<stan::services::int_argument*>(
                           parser.arg("method")->arg("bdmc")->arg("iterations")
                           ->arg("start_steps"))->value();
@@ -1034,6 +1037,10 @@ namespace stan {
           }
         }
 
+        // Headers
+        if ( save_samples )
+          writer.write_sample_names(s, sampler_ptr, model);
+
         stan::bdmc::progress_bar progress = stan::bdmc::progress_bar(
           std::cout, ais_weights, rais_weights, start_steps,
           increment, num_iter);
@@ -1114,12 +1121,18 @@ namespace stan {
           // rais
           for (int rais_index = 1; rais_index <= rais_weights; rais_index++) {
             stan::mcmc::sample posterior_sample(Eigen::VectorXd(posterior_params), 0, 0);
+            if (save_samples && output_stream) {
+              *output_stream << "# RAIS ITER #" << num_iter_index << " INDEX #"
+                             << rais_index << "\n";
+            }
             clock_t start = clock();
             double weight = stan::bdmc::rais(sampler_ptr,
                                              num_steps,
                                              bdmc_schedule,
                                              posterior_sample,
                                              model,
+                                             save_samples,
+                                             writer,
                                              base_rng,
                                              progress,
                                              num_iter_index,
@@ -1144,12 +1157,18 @@ namespace stan {
           // ais
           for (int ais_index = 1; ais_index <= ais_weights; ais_index++) {
             stan::mcmc::sample prior_sample(Eigen::VectorXd(prior_params), 0, 0);
+            if (save_samples && output_stream) {
+              *output_stream << "# AIS ITER #" << num_iter_index << " INDEX #"
+                             << ais_index << "\n";
+            }
             clock_t start = clock();
             double weight = stan::bdmc::ais(sampler_ptr,
                                             num_steps,
                                             bdmc_schedule,
                                             prior_sample,
                                             model,
+                                            save_samples,
+                                            writer,
                                             base_rng,
                                             progress,
                                             num_iter_index,
@@ -1181,38 +1200,38 @@ namespace stan {
         if (output_stream) {
           *output_stream << "\n\n#----- RESULTS -----\n";
           *output_stream << "#---- AIS ----\n";
-          *output_stream << "aisMeans      = " << "[";
+          *output_stream << "#aisMeans      = " << "[";
           for (size_t i = 0; i < ais_means.size(); i++) {
             *output_stream << ais_means[i];
             if (i < ais_means.size()-1) *output_stream << ", ";
           }
           *output_stream << "]\n";
-          *output_stream << "aisVariances  = " << "[";
+          *output_stream << "#aisVariances  = " << "[";
           for (size_t i = 0; i < ais_vars.size(); i++) {
             *output_stream << ais_vars[i];
             if (i < ais_vars.size()-1) *output_stream << ", ";
           }
           *output_stream << "]\n";
-          *output_stream << "aisTimes      = " << "[";
+          *output_stream << "#aisTimes      = " << "[";
           for (size_t i = 0; i < ais_times.size(); i++) {
             *output_stream << ais_times[i];
             if (i < ais_times.size()-1) *output_stream << ", ";
           }
           *output_stream << "]\n";
           *output_stream << "#-- Rev-AIS --\n";
-          *output_stream << "raisMeans     = " << "[";
+          *output_stream << "#raisMeans     = " << "[";
           for (size_t i = 0; i < rais_means.size(); i++) {
             *output_stream << rais_means[i];
             if (i < rais_means.size()-1) *output_stream << ", ";
           }
           *output_stream << "]\n";
-          *output_stream << "raisVariances = " << "[";
+          *output_stream << "#raisVariances = " << "[";
           for (size_t i = 0; i < rais_vars.size(); i++) {
             *output_stream << rais_vars[i];
             if (i < rais_vars.size()-1) *output_stream << ", ";
           }
           *output_stream << "]\n";
-          *output_stream << "raisTimes     = " << "[";
+          *output_stream << "#raisTimes     = " << "[";
           for (size_t i = 0; i < rais_times.size(); i++) {
             *output_stream << rais_times[i];
             if (i < rais_times.size()-1) *output_stream << ", ";
