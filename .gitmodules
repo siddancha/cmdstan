@@ -1,1 +1,5 @@
 
+[submodule "stan"]
+	path = stan
+	url = https://github.com/siddancha/stan.git
+	branch = develop
