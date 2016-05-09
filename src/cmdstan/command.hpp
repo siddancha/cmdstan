@@ -1035,34 +1035,6 @@ namespace stan {
           }
         }
 
-        // Warm up
-        if (adapt_engaged) {
-          std::cout << "Adapting for " << num_warmup << " steps ... " << std::flush;
-          for (int i = 0; i < num_warmup; i++) {
-            s = sampler_ptr->transition(s, sample_writer);
-          }
-          std::cout << " done.\n";
-          dynamic_cast<stan::mcmc::base_adapter*>(sampler_ptr)
-            ->disengage_adaptation();
-          writer.write_adapt_finish(sampler_ptr);
-
-          std::cout << "Adapted epsilon for AIS = " << dynamic_cast<stan::mcmc::adapt_diag_e_nuts<Model, rng_t>*>(sampler_ptr)->get_nominal_stepsize() << std::endl << std::endl;
-          
-          stan::mcmc::adapt_diag_e_nuts<Model, rng_t> *sampler_ptr_2 = new stan::mcmc::adapt_diag_e_nuts<Model, rng_t>(model, base_rng);
-          if (!sample::init_nuts<stan::mcmc::adapt_diag_e_nuts<Model, rng_t> >(sampler_ptr_2, algo))
-            return 0;
-          if (!sample::init_windowed_adapt<stan::mcmc::adapt_diag_e_nuts<Model, rng_t> >(sampler_ptr_2, adapt, num_warmup,
-                                                    cont_params, info))
-            return 0;
-          for (int i = 0; i < num_warmup; i++) {
-            s = sampler_ptr_2->transition(s, sample_writer);
-          }
-          std::cout << "Adapted epsilon for RAIS = " << dynamic_cast<stan::mcmc::adapt_diag_e_nuts<Model, rng_t>*>(sampler_ptr_2)->get_nominal_stepsize() << std::endl << std::endl; 
-          dynamic_cast<stan::mcmc::base_adapter*>(sampler_ptr_2)
-            ->disengage_adaptation();
-          writer.write_adapt_finish(sampler_ptr_2);
-        }
-
         // Headers
         if ( save_samples )
           writer.write_sample_names(s, sampler_ptr, model);
@@ -1112,6 +1084,37 @@ namespace stan {
                                          vars_param_posterior,
                                          vars_data);
         }
+
+        // Warm up
+        if (adapt_engaged) {
+          std::cout << "Adapting for " << num_warmup << " steps ... " << std::flush;
+          for (int i = 0; i < num_warmup; i++) {
+            s = sampler_ptr->transition(s, sample_writer);
+          }
+          std::cout << " done.\n";
+          dynamic_cast<stan::mcmc::base_adapter*>(sampler_ptr)
+            ->disengage_adaptation();
+          writer.write_adapt_finish(sampler_ptr);
+
+          std::cout << "Adapted epsilon for RAIS = " << dynamic_cast<stan::mcmc::adapt_diag_e_nuts<Model, rng_t>*>(sampler_ptr)->get_nominal_stepsize() << std::endl << std::endl;
+          
+          model.set_alpha(0.0);
+          stan::mcmc::adapt_diag_e_nuts<Model, rng_t> *sampler_ptr_2 = new stan::mcmc::adapt_diag_e_nuts<Model, rng_t>(model, base_rng);
+          if (!sample::init_nuts<stan::mcmc::adapt_diag_e_nuts<Model, rng_t> >(sampler_ptr_2, algo))
+            return 0;
+          if (!sample::init_windowed_adapt<stan::mcmc::adapt_diag_e_nuts<Model, rng_t> >(sampler_ptr_2, adapt, num_warmup,
+                                                    cont_params, info))
+            return 0;
+          for (int i = 0; i < num_warmup; i++) {
+            s = sampler_ptr_2->transition(s, sample_writer);
+          }
+          std::cout << "Adapted epsilon for AIS = " << dynamic_cast<stan::mcmc::adapt_diag_e_nuts<Model, rng_t>*>(sampler_ptr_2)->get_nominal_stepsize() << std::endl << std::endl; 
+          dynamic_cast<stan::mcmc::base_adapter*>(sampler_ptr_2)
+            ->disengage_adaptation();
+          writer.write_adapt_finish(sampler_ptr_2);
+          model.set_alpha(1.0);
+        }
+
 
         // // prior and posterior samples
         // Eigen::VectorXd posterior_params;
