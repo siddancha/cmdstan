@@ -1046,18 +1046,21 @@ namespace stan {
 
         std::vector<double> vars_param_prior;
         std::vector<double> vars_param_posterior;
-        std::vector<double> vars_data;
+        std::vector<double> vars_data_r;
+        std::vector<int> vars_data_i;
 
         if (load_file == "") {
           stan::bdmc::sample_data_and_params(model,
                                              vars_param_posterior,
-                                             vars_data,
+                                             vars_data_r,
+                                             vars_data_i,
                                              base_rng);
         } else {
           stan::bdmc::load_exact_sample (load_file,
                                          vars_param_prior,
                                          vars_param_posterior,
-                                         vars_data,
+                                         vars_data_r,
+                                         vars_data_i,
                                          model);
         }
 
@@ -1068,21 +1071,24 @@ namespace stan {
         // prior sample
         Eigen::VectorXd prior_params;
         if (load_file == "") {
-          std::vector<double> dummy_data;
+          std::vector<double> dummy_data_r;
+          std::vector<int> dummy_data_i;
           stan::bdmc::sample_data_and_params(model,
                                              vars_param_prior,
-                                             dummy_data,
+                                             dummy_data_r,
+                                             dummy_data_i,
                                              base_rng);
         }
         stan::bdmc::set_params(model, prior_params, vars_param_prior);
 
-        if (sample_data) stan::bdmc::set_data(model, vars_data);
+        if (sample_data) stan::bdmc::set_data(model, vars_data_r, vars_data_i);
 
         if (load_file == "" && save_file != "") {
           stan::bdmc::save_exact_sample (save_file,
                                          vars_param_prior,
                                          vars_param_posterior,
-                                         vars_data);
+                                         vars_data_r,
+                                         vars_data_i);
         }
 
         // Warm up
