@@ -817,9 +817,6 @@ namespace stan {
         bool sample_data = dynamic_cast<stan::services::bool_argument*>(
                            parser.arg("method")->arg("bdmc")->arg("ais")
                            ->arg("sample_data"))->value();
-        int num_data = dynamic_cast<stan::services::int_argument*>(
-                       parser.arg("method")->arg("bdmc")
-                       ->arg("num_data"))->value();
         int num_warmup = dynamic_cast<stan::services::int_argument*>(
                           parser.arg("method")->arg("bdmc")->arg("num_warmup"))->value();
 
@@ -1181,8 +1178,8 @@ namespace stan {
           weight_avg = weight_avg/rais_weights;
           weight_sqr_avg = weight_sqr_avg/rais_weights;
           time_avg = time_avg/rais_weights;
-          rais_means.push_back(weight_avg/num_data);
-          rais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg)/num_data);
+          rais_means.push_back(weight_avg);
+          rais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg));
           rais_times.push_back(time_avg);
 
           weight_avg = 0;
@@ -1217,8 +1214,8 @@ namespace stan {
           weight_avg = weight_avg/ais_weights;
           weight_sqr_avg = weight_sqr_avg/ais_weights;
           time_avg = time_avg/ais_weights;
-          ais_means.push_back(weight_avg/num_data);
-          ais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg)/num_data);
+          ais_means.push_back(weight_avg);
+          ais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg));
           ais_times.push_back(time_avg);
 
           if (num_iter_index == num_iter)
