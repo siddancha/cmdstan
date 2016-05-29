@@ -790,18 +790,15 @@ namespace stan {
           writer(sample_writer, diagnostic_writer, info);
 
         // BDMC parameters
-        // int ais_steps = dynamic_cast<stan::services::int_argument*>(
-        //                 parser.arg("method")->arg("bdmc")->arg("ais")
-        //                 ->arg("num_steps"))->value();
         int ais_weights = dynamic_cast<stan::services::int_argument*>(
                         parser.arg("method")->arg("bdmc")->arg("ais")
                         ->arg("num_weights"))->value();
-        // int rais_steps = dynamic_cast<stan::services::int_argument*>(
-        //                  parser.arg("method")->arg("bdmc")->arg("rais")
-        //                  ->arg("num_steps"))->value();
         int rais_weights = dynamic_cast<stan::services::int_argument*>(
                            parser.arg("method")->arg("bdmc")->arg("rais")
                            ->arg("num_weights"))->value();
+        int rais_burn_in = dynamic_cast<stan::services::int_argument*>(
+                           parser.arg("method")->arg("bdmc")->arg("rais")
+                           ->arg("num_burn_in"))->value();
         bool save_samples = dynamic_cast<stan::services::bool_argument*>(
                             parser.arg("method")->arg("bdmc")
                             ->arg("save_samples"))->value();
@@ -1079,6 +1076,7 @@ namespace stan {
         stan::bdmc::set_params(model, prior_params, vars_param_prior);
 
         if (sample_data) stan::bdmc::set_data(model, vars_data_r, vars_data_i);
+        else model = Model(data_var_context, &std::cout);
 
         if (load_file == "" && save_file != "") {
           stan::bdmc::save_exact_sample (save_file,
@@ -1129,6 +1127,11 @@ namespace stan {
         // if (!sample_data) model = Model(data_var_context, &std::cout);
         // stan::bdmc::initialize_with_prior(prior_params, model, base_rng);
 
+        // burn in
+        stan::mcmc::sample burnt_sample(Eigen::VectorXd(posterior_params), 0, 0);
+        for (int i = 0; i < rais_burn_in; i++)
+          burnt_sample = sampler_ptr->transition(burnt_sample, sample_writer);
+
 
         std::vector<double> rais_means;
         std::vector<double> rais_vars;
@@ -1152,7 +1155,7 @@ namespace stan {
 
           // rais
           for (int rais_index = 1; rais_index <= rais_weights; rais_index++) {
-            stan::mcmc::sample posterior_sample(Eigen::VectorXd(posterior_params), 0, 0);
+            stan::mcmc::sample posterior_sample(Eigen::VectorXd(burnt_sample.cont_params()), 0, 0);
             if (save_samples && output_stream) {
               *output_stream << "# RAIS ITER #" << num_iter_index << " INDEX #"
                              << rais_index << "\n";
