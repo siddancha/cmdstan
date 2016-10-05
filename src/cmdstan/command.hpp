@@ -1133,13 +1133,8 @@ namespace stan {
           burnt_sample = sampler_ptr->transition(burnt_sample, sample_writer);
 
 
-        std::vector<double> rais_means;
-        std::vector<double> rais_vars;
-        std::vector<double> rais_times;
-
-        std::vector<double> ais_means;
-        std::vector<double> ais_vars;
-        std::vector<double> ais_times;
+        std::vector<std::vector<std::pair<double, double> > > rais_samples;
+        std::vector<std::vector<std::pair<double, double> > > ais_samples;
 
         int num_iter_index = 0;
         int num_steps = start_steps;
@@ -1149,11 +1144,8 @@ namespace stan {
         while (true) {
           num_iter_index += 1;
 
-          double weight_avg = 0;
-          double weight_sqr_avg = 0;
-          double time_avg = 0;
-
           // rais
+          rais_samples.push_back(std::vector<std::pair<double, double> >());
           for (int rais_index = 1; rais_index <= rais_weights; rais_index++) {
             stan::mcmc::sample posterior_sample(Eigen::VectorXd(burnt_sample.cont_params()), 0, 0);
             if (save_samples && output_stream) {
@@ -1174,22 +1166,12 @@ namespace stan {
                                              rais_index,
                                              sample_writer);
             clock_t end = clock();
-            weight_avg += weight;
-            weight_sqr_avg += weight*weight;
-            time_avg += static_cast<double>(end - start) / CLOCKS_PER_SEC;
+            std::pair<double, double> weight_time_pair (weight, static_cast<double>(end-start) / CLOCKS_PER_SEC);
+            rais_samples.back().push_back(weight_time_pair);
           }
-          weight_avg = weight_avg/rais_weights;
-          weight_sqr_avg = weight_sqr_avg/rais_weights;
-          time_avg = time_avg/rais_weights;
-          rais_means.push_back(weight_avg);
-          rais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg));
-          rais_times.push_back(time_avg);
-
-          weight_avg = 0;
-          weight_sqr_avg = 0;
-          time_avg = 0;
 
           // ais
+          ais_samples.push_back(std::vector<std::pair<double, double> >());
           for (int ais_index = 1; ais_index <= ais_weights; ais_index++) {
             stan::mcmc::sample prior_sample(Eigen::VectorXd(prior_params), 0, 0);
             if (save_samples && output_stream) {
@@ -1210,16 +1192,9 @@ namespace stan {
                                             ais_index,
                                             sample_writer);
             clock_t end = clock();
-            weight_avg += weight;
-            weight_sqr_avg += weight*weight;
-            time_avg += static_cast<double>(end - start) / CLOCKS_PER_SEC;
+            std::pair<double, double> weight_time_pair (weight, static_cast<double>(end-start) / CLOCKS_PER_SEC);
+            ais_samples.back().push_back(weight_time_pair);
           }
-          weight_avg = weight_avg/ais_weights;
-          weight_sqr_avg = weight_sqr_avg/ais_weights;
-          time_avg = time_avg/ais_weights;
-          ais_means.push_back(weight_avg);
-          ais_vars.push_back(std::sqrt(weight_sqr_avg - weight_avg*weight_avg));
-          ais_times.push_back(time_avg);
 
           if (num_iter_index == num_iter)
             break;
@@ -1235,43 +1210,23 @@ namespace stan {
         if (output_stream) {
           *output_stream << "\n\n#----- RESULTS -----\n";
           *output_stream << "#---- AIS ----\n";
-          *output_stream << "#aisMeans      = " << "[";
-          for (size_t i = 0; i < ais_means.size(); i++) {
-            *output_stream << ais_means[i];
-            if (i < ais_means.size()-1) *output_stream << ", ";
+          for (size_t i = 0; i < ais_samples.size(); i++) {
+            *output_stream << "[";
+            for (size_t j = 0; j < ais_samples[i].size() - 1; j++)
+              *output_stream << "(" << ais_samples[i][j].first << ", " << ais_samples[i][j].second << "), ";
+            if (ais_samples[i].size() > 0)
+              *output_stream << "(" << ais_samples[i].back().first << ", " << ais_samples[i].back().second << ")";
+            *output_stream << "]\n";
           }
-          *output_stream << "]\n";
-          *output_stream << "#aisVariances  = " << "[";
-          for (size_t i = 0; i < ais_vars.size(); i++) {
-            *output_stream << ais_vars[i];
-            if (i < ais_vars.size()-1) *output_stream << ", ";
-          }
-          *output_stream << "]\n";
-          *output_stream << "#aisTimes      = " << "[";
-          for (size_t i = 0; i < ais_times.size(); i++) {
-            *output_stream << ais_times[i];
-            if (i < ais_times.size()-1) *output_stream << ", ";
-          }
-          *output_stream << "]\n";
           *output_stream << "#-- Rev-AIS --\n";
-          *output_stream << "#raisMeans     = " << "[";
-          for (size_t i = 0; i < rais_means.size(); i++) {
-            *output_stream << rais_means[i];
-            if (i < rais_means.size()-1) *output_stream << ", ";
+          for (size_t i = 0; i < rais_samples.size(); i++) {
+            *output_stream << "[";
+            for (size_t j = 0; j < rais_samples[i].size() - 1; j++)
+              *output_stream << "(" << rais_samples[i][j].first << ", " << rais_samples[i][j].second << "), ";
+            if (rais_samples[i].size() > 0)
+              *output_stream << "(" << rais_samples[i].back().first << ", " << rais_samples[i].back().second << ")";
+            *output_stream << "]\n";
           }
-          *output_stream << "]\n";
-          *output_stream << "#raisVariances = " << "[";
-          for (size_t i = 0; i < rais_vars.size(); i++) {
-            *output_stream << rais_vars[i];
-            if (i < rais_vars.size()-1) *output_stream << ", ";
-          }
-          *output_stream << "]\n";
-          *output_stream << "#raisTimes     = " << "[";
-          for (size_t i = 0; i < rais_times.size(); i++) {
-            *output_stream << rais_times[i];
-            if (i < rais_times.size()-1) *output_stream << ", ";
-          }
-          *output_stream << "]\n";
         }
 
       }
