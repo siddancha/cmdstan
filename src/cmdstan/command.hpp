@@ -817,10 +817,15 @@ namespace stan {
         int num_warmup = dynamic_cast<stan::services::int_argument*>(
                           parser.arg("method")->arg("bdmc")->arg("num_warmup"))->value();
 
-        std::string load_file
+        std::string load_prior_file
         = dynamic_cast<stan::services::string_argument*>
         (parser.arg("method")->arg("bdmc")->arg("exact_sample")
-         ->arg("load_file"))->value();
+         ->arg("load_prior_file"))->value();
+
+        std::string load_posterior_file
+        = dynamic_cast<stan::services::string_argument*>
+        (parser.arg("method")->arg("bdmc")->arg("exact_sample")
+         ->arg("load_posterior_file"))->value();
 
         std::string save_file
         = dynamic_cast<stan::services::string_argument*>
@@ -1043,15 +1048,16 @@ namespace stan {
         std::vector<double> vars_data_r;
         std::vector<int> vars_data_i;
 
-        if (load_file == "") {
+        if (load_posterior_file == "") {
           stan::bdmc::sample_data_and_params(model,
                                              vars_param_posterior,
                                              vars_data_r,
                                              vars_data_i,
                                              base_rng);
         } else {
-          stan::bdmc::load_exact_sample (load_file,
-                                         vars_param_prior,
+          std::vector<double> dummy_vector;
+          stan::bdmc::load_exact_sample (load_posterior_file,
+                                         dummy_vector,
                                          vars_param_posterior,
                                          vars_data_r,
                                          vars_data_i,
@@ -1062,9 +1068,7 @@ namespace stan {
         Eigen::VectorXd posterior_params;
         stan::bdmc::set_params(model, posterior_params, vars_param_posterior);
 
-        // prior sample
-        Eigen::VectorXd prior_params;
-        if (load_file == "") {
+        if (load_prior_file == "") {
           std::vector<double> dummy_data_r;
           std::vector<int> dummy_data_i;
           stan::bdmc::sample_data_and_params(model,
@@ -1072,13 +1076,26 @@ namespace stan {
                                              dummy_data_r,
                                              dummy_data_i,
                                              base_rng);
+        } else {
+          std::vector<double> dummy_vector;
+          std::vector<double> dummy_data_r;
+          std::vector<int> dummy_data_i;
+          stan::bdmc::load_exact_sample (load_prior_file,
+                                         vars_param_prior,
+                                         dummy_vector,
+                                         dummy_data_r,
+                                         dummy_data_i,
+                                         model);
         }
+
+        // prior sample
+        Eigen::VectorXd prior_params;
         stan::bdmc::set_params(model, prior_params, vars_param_prior);
 
         if (sample_data) stan::bdmc::set_data(model, vars_data_r, vars_data_i);
         else model = Model(data_var_context, &std::cout);
 
-        if (load_file == "" && save_file != "") {
+        if (save_file != "") {
           stan::bdmc::save_exact_sample (save_file,
                                          vars_param_prior,
                                          vars_param_posterior,
