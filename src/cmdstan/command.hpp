@@ -1191,6 +1191,24 @@ namespace stan {
           ais_samples.push_back(std::vector<std::pair<double, double> >());
           for (int ais_index = 1; ais_index <= ais_weights; ais_index++) {
             stan::mcmc::sample prior_sample(Eigen::VectorXd(prior_params), 0, 0);
+            // If prior file was not provided, resample from prior.
+            if (load_prior_file == "") {
+              Eigen::VectorXd resampled_prior_params;
+              std::vector<double> vars_param_resampled_prior;
+              std::vector<double> dummy_data_r;
+              std::vector<int> dummy_data_i;
+              stan::bdmc::sample_data_and_params(model,
+                                                 vars_param_resampled_prior,
+                                                 dummy_data_r,
+                                                 dummy_data_i,
+                                                 base_rng);
+              // Setting resampled prior sample.
+              stan::bdmc::set_params(model, resampled_prior_params, vars_param_resampled_prior);
+              prior_sample = stan::mcmc::sample(resampled_prior_params, 0, 0);
+              // Resetting model to correct data.
+              if (sample_data) stan::bdmc::set_data(model, vars_data_r, vars_data_i);
+              else model = Model(data_var_context, &std::cout);
+            }
             if (save_samples && output_stream) {
               *output_stream << "# AIS ITER #" << num_iter_index << " INDEX #"
                              << ais_index << "\n";
